@@ -15,20 +15,16 @@ from voice_browser_control import VoiceBrowserControl
 
 class TkinterBrowserAssistant:
     def __init__(self):
-        # Initialize the main window
         self.root = tk.Tk()
         self.root.title("Browser Assistant")
         self.root.geometry("400x700")
         self.root.minsize(350, 500)
         
-        # Center the window on screen
         self.center_window()
         
-        # Configure the main frame
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Chat history
         self.chat_label = ttk.Label(self.main_frame, text="Chat History")
         self.chat_label.pack(pady=(0, 5), anchor=tk.W)
         
@@ -42,7 +38,6 @@ class TkinterBrowserAssistant:
         self.chat_history.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         self.chat_history.config(state=tk.DISABLED)
         
-        # Command input
         self.input_label = ttk.Label(self.main_frame, text="Enter Command")
         self.input_label.pack(pady=(0, 5), anchor=tk.W)
         
@@ -50,11 +45,9 @@ class TkinterBrowserAssistant:
         self.command_input.pack(fill=tk.X, pady=(0, 5))
         self.command_input.bind("<Return>", self.send_command)
         
-        # Buttons frame
         self.button_frame = ttk.Frame(self.main_frame)
         self.button_frame.pack(fill=tk.X, pady=10)
         
-        # Send button
         self.send_button = ttk.Button(
             self.button_frame, 
             text="Send", 
@@ -62,7 +55,6 @@ class TkinterBrowserAssistant:
         )
         self.send_button.pack(side=tk.LEFT, padx=(0, 5))
         
-        # Voice command button
         self.voice_button = ttk.Button(
             self.button_frame, 
             text="🎤 Voice", 
@@ -70,7 +62,6 @@ class TkinterBrowserAssistant:
         )
         self.voice_button.pack(side=tk.LEFT)
         
-        # Status indicator
         self.status_frame = ttk.Frame(self.main_frame)
         self.status_frame.pack(fill=tk.X, pady=(10, 0))
         
@@ -80,7 +71,6 @@ class TkinterBrowserAssistant:
         self.status_value = ttk.Label(self.status_frame, text="Starting...")
         self.status_value.pack(side=tk.LEFT, padx=(5, 0))
         
-        # Quick commands section
         self.commands_label = ttk.Label(self.main_frame, text="Quick Commands")
         self.commands_label.pack(pady=(10, 5), anchor=tk.W)
         
@@ -103,27 +93,20 @@ class TkinterBrowserAssistant:
             )
             btn.pack(fill=tk.X, pady=2)
         
-        # Initialize the recognizer
         self.recognizer = sr.Recognizer()
         
-        # For voice output
         self.voice_engine = pyttsx3.init()
         
-        # Thread for voice recognition
         self.voice_thread = None
         self.listening = False
         
-        # Initialize browser
         self.browser_controller = None
         self.driver = None
         
-        # Start browser in a separate thread
         threading.Thread(target=self.start_browser, daemon=True).start()
         
-        # Add a welcome message
         self.add_to_chat("System", "Starting Browser Assistant...")
         
-        # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
     
     def center_window(self):
@@ -133,17 +116,14 @@ class TkinterBrowserAssistant:
         window_width = 400
         window_height = 700
         
-        # Calculate position coordinates
         x_position = (screen_width - window_width) // 2
         y_position = (screen_height - window_height) // 2
         
-        # Set window position
         self.root.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
     
     def start_browser(self):
         """Start the browser"""
         try:
-            # Set up Chrome options
             chrome_options = Options()
             chrome_options.add_argument("--start-maximized")
             chrome_options.add_argument("--disable-redirects")  # Disable automatic redirects
@@ -154,25 +134,19 @@ class TkinterBrowserAssistant:
                 "browser.startup_page": 1  # Open homepage on startup
             })
             
-            # Start Chrome browser in a new window without positioning constraints
             self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
             
-            # Initialize browser controller
             self.browser_controller = VoiceBrowserControl(self.driver)
             
-            # Update status
             self.update_status("Ready")
             self.add_to_chat("System", "Browser is ready. You can now start giving commands.")
             
-            # Start with Google homepage
             google_search_url = "https://www.google.com/search"
             self.driver.get(google_search_url)
             
-            # Verify we're on the search page and not a doodle page
-            time.sleep(1)  # Give the page a moment to load
+            time.sleep(1) 
             current_url = self.driver.current_url
             if "google.com/doodles" in current_url or not "/search" in current_url:
-                # We got redirected to a doodle page, force navigation back to search
                 self.driver.get(google_search_url)
             
         except Exception as e:
@@ -187,7 +161,6 @@ class TkinterBrowserAssistant:
         if not command:
             return
         
-        # Add to chat history
         self.add_to_chat("You", command)
         self.command_input.delete(0, tk.END)
         

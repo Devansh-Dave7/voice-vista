@@ -3,17 +3,14 @@ import sys
 import os
 import re
 
-# Set up logging to file for testing
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler("test_favorites.log"), 
                               logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
-# Import our mocks first
 import test_mocks
 
-# Now import the modules we want to test
 from favorites_manager import FavoritesManager
 import voice_browser_control
 
@@ -21,13 +18,10 @@ def test_favorites():
     """
     Test the favorites functionality in voice_browser_control.py
     """
-    # Disable actual browser opening for testing
     class MockVoiceBrowserControl:
         def __init__(self):
-            # Initialize the favorites manager
             self.favorites_manager = FavoritesManager()
             
-            # Set up mock attributes
             self.reading_thread = None
             self.stop_reading = False
             self.groq_client = None
@@ -42,7 +36,6 @@ def test_favorites():
         
         def open_website(self, website):
             """Mock open_website method that just logs the website"""
-            # Check if this is a category name - try to use favorite if available
             if website.lower() in self.favorites_manager.favorites:
                 logger.info(f"Recognized '{website}' as a category name, using favorite site")
                 website = self.favorites_manager.get_favorite(website.lower())
@@ -61,7 +54,6 @@ def test_favorites():
             """Simplified command processing focused on favorites"""
             logger.info(f"Processing command: {command}")
             
-            # First check the exact patterns for set favorites
             if self.favorites_manager.is_setting_favorite_command(command):
                 logger.info("Command identified as a 'set favorite' command")
                 category, website = self.favorites_manager.extract_favorite_settings(command)
@@ -72,7 +64,6 @@ def test_favorites():
                 else:
                     logger.error(f"Failed to extract category and website from '{command}'")
             else:
-                # Debug "when I say" pattern matching
                 when_i_say_pattern = r'when\s+I\s+say\s+(\w+)\s+(?:use|open|go to)\s+(.+)'
                 match = re.search(when_i_say_pattern, command.lower())
                 if match:
@@ -81,9 +72,7 @@ def test_favorites():
                 elif "when i say" in command.lower():
                     logger.info(f"'when I say' phrase found but pattern did not match")
             
-            # Special handling for "when I say [category]" commands without "use"
             if "when i say" in command.lower():
-                # Simple parsing to extract just the category
                 words = command.lower().split()
                 for i, word in enumerate(words):
                     if i >= 2 and words[i-2:i] == ["when", "i"] and word == "say" and i+1 < len(words):
@@ -95,14 +84,12 @@ def test_favorites():
                                 self.speak(f"Opening {category}")
                                 self.open_website(website)
                                 return True
-                        # Even if we don't find a matching category, mark the command as handled
                         else:
                             self.speak(f"I don't have a favorite set for {category}")
                             logger.info(f"No favorite found for category '{category}'")
                             return True
                         break
             
-            # Check if this is a direct open category command
             if self.favorites_manager.is_open_category_command(command):
                 category = self.favorites_manager.extract_category(command)
                 if category:
@@ -113,7 +100,6 @@ def test_favorites():
                         self.open_website(website)
                         return True
             
-            # Check if user wants to list favorites
             if self.favorites_manager.is_listing_favorites_command(command):
                 favorites_text = "Your favorites are: "
                 favorites_list = self.favorites_manager.get_all_favorites()
@@ -123,20 +109,16 @@ def test_favorites():
                 self.speak(full_text)
                 return True
             
-            # If command not recognized
             logger.info(f"Command not recognized: {command}")
             return False
     
     logger.info("Starting favorites test...")
     
-    # Create a controller
     controller = MockVoiceBrowserControl()
     
-    # Test 1: Get initial favorite for videos
     initial_videos = controller.get_favorite("videos")
     logger.info(f"Initial videos favorite: {initial_videos}")
     
-    # Test 2: Set favorite with different commands
     test_commands = [
         "set favorite videos to vimeo.com",
         "for music use spotify.com", 
@@ -149,7 +131,6 @@ def test_favorites():
         logger.info(f"\nTesting command: '{command}'")
         controller.process_command(command)
         
-        # Extract category from command for verification
         if "videos" in command:
             category = "videos"
         elif "music" in command:
@@ -161,14 +142,10 @@ def test_favorites():
         elif "movies" in command:
             category = "movies"
             
-        # Verify the favorite was set
         current_favorite = controller.get_favorite(category)
         logger.info(f"After command, {category} favorite is: {current_favorite}")
     
-    # Test 3: Try to trigger the "set favorite" command followed by "open category" command
-    # This tests that our fix prevents "open category" from being triggered when it's actually a "set favorite" command
     
-    # First test setting a favorite
     logger.info("\nTesting potential conflict resolution...")
     set_cmd = "set favorite videos to vimeo.com"
     logger.info(f"Command: '{set_cmd}'")
@@ -176,21 +153,17 @@ def test_favorites():
     videos_fav = controller.get_favorite("videos")
     logger.info(f"Videos favorite is now: {videos_fav}")
     
-    # Now test opening the category - should open vimeo.com, not youtube.com
     open_cmd = "open category videos"
     logger.info(f"Command: '{open_cmd}'")
     controller.process_command(open_cmd)
     
-    # Test 4: List favorites
     list_cmd = "show favorites"
     logger.info(f"\nCommand: '{list_cmd}'")
     controller.process_command(list_cmd)
     
-    # Test special cases
     logger.info("\nTesting 'when I say' command specifically...")
     special_cmd = "when I say shopping use amazon.in"
     logger.info(f"Command: '{special_cmd}'")
-    # Directly test the pattern
     pattern = r'when\s+I\s+say\s+(\w+)\s+(?:use|open|go to)\s+(.+)'
     match = re.search(pattern, special_cmd.lower())
     if match:
@@ -198,7 +171,6 @@ def test_favorites():
     else:
         logger.info("Pattern does not match")
         
-    # Try with variations of the pattern
     patterns_to_try = [
         r'when\s+I\s+say\s+(\w+)\s+use\s+(.+)',
         r'when\s+I\s+say\s+(\w+)(?:\s+)use(?:\s+)(.+)',

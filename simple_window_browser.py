@@ -15,28 +15,24 @@ from voice_browser_control import VoiceBrowserControl
 
 class SimpleWindowBrowserAssistant:
     def __init__(self):
-        # Initialize the main window
+        
         self.root = tk.Tk()
         self.root.title("Browser Assistant")
         self.root.geometry("400x700")
         self.root.minsize(350, 500)
         
-        # Configure the main frame
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Create a frame for current URL display
         self.url_frame = ttk.Frame(self.main_frame)
         self.url_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # URL label
         self.url_label = ttk.Label(self.url_frame, text="Current Page:")
         self.url_label.pack(side=tk.LEFT)
         
         self.url_value = ttk.Label(self.url_frame, text="Not connected")
         self.url_value.pack(side=tk.LEFT, padx=(5, 0))
         
-        # Chat history
         self.chat_label = ttk.Label(self.main_frame, text="Chat History")
         self.chat_label.pack(pady=(0, 5), anchor=tk.W)
         
@@ -50,7 +46,6 @@ class SimpleWindowBrowserAssistant:
         self.chat_history.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         self.chat_history.config(state=tk.DISABLED)
         
-        # Command input
         self.input_label = ttk.Label(self.main_frame, text="Enter Command")
         self.input_label.pack(pady=(0, 5), anchor=tk.W)
         
@@ -58,11 +53,9 @@ class SimpleWindowBrowserAssistant:
         self.command_input.pack(fill=tk.X, pady=(0, 5))
         self.command_input.bind("<Return>", self.send_command)
         
-        # Buttons frame
         self.button_frame = ttk.Frame(self.main_frame)
         self.button_frame.pack(fill=tk.X, pady=10)
         
-        # Send button
         self.send_button = ttk.Button(
             self.button_frame, 
             text="Send", 
@@ -70,7 +63,6 @@ class SimpleWindowBrowserAssistant:
         )
         self.send_button.pack(side=tk.LEFT, padx=(0, 5))
         
-        # Voice command button
         self.voice_button = ttk.Button(
             self.button_frame, 
             text="🎤 Disable Voice", 
@@ -78,7 +70,6 @@ class SimpleWindowBrowserAssistant:
         )
         self.voice_button.pack(side=tk.LEFT, padx=(0, 5))
         
-        # Open Browser button
         self.browser_button = ttk.Button(
             self.button_frame, 
             text="🔍 Focus Browser", 
@@ -86,7 +77,6 @@ class SimpleWindowBrowserAssistant:
         )
         self.browser_button.pack(side=tk.LEFT)
         
-        # Status indicator
         self.status_frame = ttk.Frame(self.main_frame)
         self.status_frame.pack(fill=tk.X, pady=(10, 0))
         
@@ -96,7 +86,6 @@ class SimpleWindowBrowserAssistant:
         self.status_value = ttk.Label(self.status_frame, text="Starting...")
         self.status_value.pack(side=tk.LEFT, padx=(5, 0))
         
-        # Quick commands section
         self.commands_label = ttk.Label(self.main_frame, text="Quick Commands")
         self.commands_label.pack(pady=(10, 5), anchor=tk.W)
         
@@ -119,40 +108,30 @@ class SimpleWindowBrowserAssistant:
             )
             btn.pack(fill=tk.X, pady=2)
         
-        # Initialize the recognizer
         self.recognizer = sr.Recognizer()
         
-        # For voice output
         self.voice_engine = pyttsx3.init()
         
-        # Thread for voice recognition
         self.voice_thread = None
         self.listening = False
         self.voice_enabled = True
         
-        # Initialize browser
         self.browser_controller = None
         self.driver = None
         
-        # Current URL tracking
         self.current_url = "about:blank"
         
-        # Start browser in a separate thread
         threading.Thread(target=self.start_browser, daemon=True).start()
         
-        # Add a welcome message
         self.add_to_chat("System", "Starting Browser Assistant...")
         
-        # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # Start voice recognition automatically after 3 seconds
         self.root.after(3000, self.start_automatic_voice_listening)
     
     def start_browser(self):
         """Start the browser (visible, maximized)"""
         try:
-            # Set up Chrome options
             chrome_options = Options()
             chrome_options.add_argument("--start-maximized")  # Start maximized
             chrome_options.add_argument("--disable-redirects")  # Disable automatic redirects
@@ -160,59 +139,45 @@ class SimpleWindowBrowserAssistant:
             chrome_options.add_experimental_option("prefs", {
                 "homepage": "https://www.google.com/search",
                 "homepage_is_newtabpage": False,
-                "browser.startup_page": 1  # Open homepage on startup
+                "browser.startup_page": 1  
             })
             
-            # Start Chrome browser
             self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
             
-            # Initialize browser controller
             self.browser_controller = VoiceBrowserControl(self.driver)
             
-            # Get screen dimensions
             screen_width = self.root.winfo_screenwidth()
             screen_height = self.root.winfo_screenheight()
             
-            # Calculate tkinter window size (compact but usable)
             tk_width = 400
             tk_height = min(700, screen_height - 100)
             
-            # Position tkinter window at the top-right corner, not overlapping much
             self.root.geometry(f"{tk_width}x{tk_height}+{screen_width - tk_width - 20}+20")
             
-            # Make tkinter window stay on top
             self.root.attributes('-topmost', True)
             
-            # Store window handles for focusing
             self.browser_window_handle = self.driver.current_window_handle
             
-            # Update status
             self.update_status("Ready")
             self.add_to_chat("System", "Browser is ready in full-screen mode.")
             
-            # Start with Google homepage
             google_search_url = "https://www.google.com/search"
             self.driver.get(google_search_url)
             self.current_url = google_search_url
             self.update_url_display(google_search_url)
             
-            # Verify we're on the search page and not a doodle page
             time.sleep(1)  # Give the page a moment to load
             current_url = self.driver.current_url
             if "google.com/doodles" in current_url or not "/search" in current_url:
-                # We got redirected to a doodle page, force navigation back to search
                 self.driver.get(google_search_url)
                 self.current_url = google_search_url
                 self.update_url_display(google_search_url)
             
-            # Start a thread to monitor URL changes
             threading.Thread(target=self.monitor_url_changes, daemon=True).start()
             
-            # Set up the reading interrupt mechanism
             self.is_reading = False
             self.should_stop_reading = False
             
-            # Force focus on browser window immediately
             self.open_current_url_in_browser()
             
         except Exception as e:
@@ -246,30 +211,21 @@ class SimpleWindowBrowserAssistant:
         """Focus the browser window and bring it to front"""
         if self.driver:
             try:
-                # Switch to the browser window
                 self.driver.switch_to.window(self.driver.current_window_handle)
                 
-                # Multiple approaches to try to focus the window
-                # 1. Use JavaScript to focus the window
                 self.driver.execute_script("window.focus();")
                 
-                # 2. Perform window-manager specific actions
                 if os.name == 'nt':  # Windows
-                    # Get window handle for Windows OS
                     import ctypes
                     from ctypes import wintypes
                     
                     try:
-                        # Get window handle by title
                         user32 = ctypes.WinDLL('user32', use_last_error=True)
                         
-                        # Find window by Chrome title (which usually contains the page title)
                         FindWindowA = user32.FindWindowA
                         FindWindowA.argtypes = [wintypes.LPCSTR, wintypes.LPCSTR]
                         FindWindowA.restype = wintypes.HWND
                         
-                        # Try to find by partial title match 
-                        # (current URL might be in the title)
                         hwnd = None
                         if "chrome" in self.driver.title.lower():
                             hwnd = FindWindowA(None, self.driver.title.encode('utf-8'))

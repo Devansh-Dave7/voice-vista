@@ -65,11 +65,9 @@ class MockTTS:
     def init(self):
         return self
 
-# Mock modules that would be imported
 import sys
 from unittest.mock import MagicMock
 
-# Create mocks for all the imported modules
 sys.modules['speech_recognition'] = MagicMock()
 sys.modules['speech_recognition'].Recognizer = MockSpeechRecognizer
 sys.modules['speech_recognition'].Microphone = MockMicrophone
@@ -103,7 +101,6 @@ sys.modules['nltk'] = MagicMock()
 sys.modules['nltk.tokenize'] = MagicMock()
 sys.modules['nltk.corpus'] = MagicMock()
 
-# Mock our custom imported modules
 sys.modules['advanced_page_analyzer'] = MagicMock()
 sys.modules['advanced_page_analyzer'].AdvancedPageAnalyzer = lambda x: MagicMock()
 sys.modules['youtube_controller'] = MagicMock()

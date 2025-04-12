@@ -182,19 +182,15 @@ class VoiceBrowserControl:
     
     def analyze_intent(self, text):
         """Analyze text to determine user intent using NLP"""
-        # First check if this is a set favorite command - if so, don't process as open category
         if self.favorites_manager.is_setting_favorite_command(text):
             return None
 
-        # Simple tokenization
         words = text.lower().split()
         
-        # Check for direct category mentions
         for category in self.favorites_manager.favorites.keys():
             if category in words:
                 return {"intent": "open_category", "category": category}
         
-        # Check for intent keywords
         for intent, keywords in INTENT_KEYWORDS.items():
             for keyword in keywords:
                 if keyword in text.lower():
